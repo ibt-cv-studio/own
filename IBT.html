@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Professional CV Builder</title>
+
+<style>
+body { font-family: Arial; margin:0; background:#f4f6f9; }
+
+.container { display:flex; }
+
+.form {
+    width:50%;
+    padding:20px;
+    background:white;
+    height:100vh;
+    overflow:auto;
+}
+
+.preview {
+    width:50%;
+    padding:20px;
+    background:#e9ecef;
+    height:100vh;
+    overflow:auto;
+}
+
+input, select {
+    width:100%;
+    margin:5px 0 10px;
+    padding:6px;
+}
+
+button {
+    padding:8px;
+    margin:5px 0;
+    cursor:pointer;
+}
+
+.cv {
+    background:white;
+    padding:20px;
+}
+
+h2 {
+    border-bottom:1px solid black;
+}
+
+table {
+    width:100%;
+    border-collapse: collapse;
+}
+
+td, th {
+    border:1px solid black;
+    padding:5px;
+}
+
+.photo {
+    width:120px;
+    height:120px;
+    object-fit: cover;
+    border:1px solid black;
+    float:right;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- FORM -->
+<div class="form">
+
+<h2>Personal Info</h2>
+
+<input id="name" placeholder="Full Name">
+<input id="id" placeholder="ID (optional)">
+<input id="phone" placeholder="Phone">
+<input id="email" placeholder="Email">
+<input id="photo" type="file">
+
+<select id="sex">
+<option>Male</option>
+<option>Female</option>
+</select>
+
+<select id="marital">
+<option>Single</option>
+<option>Married</option>
+</select>
+
+<h2>Address</h2>
+
+<select id="province" onchange="updateDistricts(); updateAddress();"></select>
+
+<select id="district" onchange="updateAddress();">
+<option value="">Select District</option>
+</select>
+
+<p><b>Full Address:</b> <span id="full-address"></span></p>
+
+<h2>Education</h2>
+<div id="education-list"></div>
+<button onclick="addEducation()">+ Add Education</button>
+
+<h2>Languages</h2>
+<div id="language-list"></div>
+<button onclick="addLanguage()">+ Add Language</button>
+
+<h2>Skills</h2>
+<div id="skills-list"></div>
+<button onclick="addSkill()">+ Add Skill</button>
+
+<h2>Hobbies</h2>
+<div id="hobbies-list"></div>
+<button onclick="addHobby()">+ Add Hobby</button>
+
+<h2>References</h2>
+<div id="reference-list"></div>
+<button onclick="addReference()">+ Add Reference</button>
+
+<br><br>
+<button onclick="generateCV()">Generate CV</button>
+<button onclick="downloadPDF()">Download PDF</button>
+
+</div>
+
+<!-- PREVIEW -->
+<div class="preview">
+
+<div class="cv" id="cv">
+
+<h1 style="text-align:center;">CURRICULUM VITAE</h1>
+
+<img id="cv-photo" class="photo">
+
+<h1 id="cv-name"></h1>
+
+<h2>PERSONAL DETAILS</h2>
+<p id="cv-personal"></p>
+
+<h2>EDUCATIONAL BACKGROUND</h2>
+<table id="cv-education"></table>
+
+<h2>LANGUAGE USE</h2>
+<table id="cv-languages"></table>
+
+<h2>OTHER SKILLS</h2>
+<ul id="cv-skills"></ul>
+
+<h2>HOBBIES</h2>
+<ul id="cv-hobbies"></ul>
+
+<h2>REFERENCE</h2>
+<p id="cv-ref"></p>
+
+<h2>DECLARATION</h2>
+<p id="cv-declaration"></p>
+
+<br><br>
+
+<p id="cv-sign-name" style="text-align:right; font-weight:bold;"></p>
+
+<canvas id="signature-pad" width="300" height="100" style="border:1px solid black; display:block; margin-left:auto;"></canvas>
+
+<button onclick="clearSignature()">Clear Signature</button>
+
+</div>
+
+</div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+
+<script>
+
+// ================= PHOTO =================
+document.getElementById("photo").addEventListener("change", function(e){
+    const reader = new FileReader();
+    reader.onload = function(){
+        document.getElementById("cv-photo").src = reader.result;
+    }
+    reader.readAsDataURL(e.target.files[0]);
+});
+
+// ================= RWANDA ADDRESS FIX =================
+const rwandaData = {
+    "Northern Province": ["Musanze", "Burera", "Gicumbi", "Rulindo", "Gakenke"],
+    "Southern Province": ["Huye", "Nyanza", "Gisagara", "Nyamagabe", "Nyaruguru", "Muhanga", "Ruhango", "Kamonyi"],
+    "Eastern Province": ["Rwamagana", "Kayonza", "Kirehe", "Ngoma", "Bugesera", "Nyagatare"],
+    "Western Province": ["Rubavu", "Nyabihu", "Rutsiro", "Karongi", "Ngororero", "Rusizi", "Nyamasheke"],
+    "Kigali City": ["Gasabo", "Kicukiro", "Nyarugenge"]
+};
+
+// LOAD PROVINCES
+function loadProvinces() {
+    let provinceSelect = document.getElementById("province");
+
+    provinceSelect.innerHTML = `<option value="">Select Province</option>`;
+
+    Object.keys(rwandaData).forEach(province => {
+        let opt = document.createElement("option");
+        opt.value = province;
+        opt.textContent = province;
+        provinceSelect.appendChild(opt);
+    });
+}
+
+// UPDATE DISTRICTS
+function updateDistricts() {
+    let province = document.getElementById("province").value;
+    let districtSelect = document.getElementById("district");
+
+    districtSelect.innerHTML = `<option value="">Select District</option>`;
+
+    if (province && rwandaData[province]) {
+        rwandaData[province].forEach(district => {
+            let opt = document.createElement("option");
+            opt.value = district;
+            opt.textContent = district;
+            districtSelect.appendChild(opt);
+        });
+    }
+}
+
+// UPDATE FULL ADDRESS
+function updateAddress() {
+    let province = document.getElementById("province").value;
+    let district = document.getElementById("district").value;
+
+    let full = "";
+
+    if (district) {
+        full = district + " District";
+    }
+
+    if (province) {
+        full += ", " + province;
+    }
+
+    full += ", Rwanda";
+
+    document.getElementById("full-address").innerText = full;
+}
+
+// RUN PROVINCES ON PAGE LOAD (FIX)
+window.onload = function () {
+    loadProvinces();
+};
+
+// ================= DYNAMIC FIELDS =================
+function addEducation(){
+    let div = document.createElement("div");
+    div.innerHTML = `
+        <input placeholder="Year">
+        <input placeholder="School">
+        <input placeholder="Qualification">
+    `;
+    document.getElementById("education-list").appendChild(div);
+}
+
+function addLanguage(){
+    let div = document.createElement("div");
+    div.innerHTML = `
+        <input placeholder="Language">
+        <select><option>Excellent</option><option>Very Good</option><option>Good</option></select>
+        <select><option>Excellent</option><option>Very Good</option><option>Good</option></select>
+        <select><option>Excellent</option><option>Very Good</option><option>Good</option></select>
+    `;
+    document.getElementById("language-list").appendChild(div);
+}
+
+function addSkill(){
+    let div = document.createElement("div");
+    div.innerHTML = `
+        <select>
+            <option>Computer Skills</option>
+            <option>Communication</option>
+            <option>Teamwork</option>
+            <option>Leadership</option>
+            <option>Problem Solving</option>
+        </select>
+    `;
+    document.getElementById("skills-list").appendChild(div);
+}
+
+function addHobby(){
+    let div = document.createElement("div");
+    div.innerHTML = `
+        <select>
+            <option>Reading</option>
+            <option>Football</option>
+            <option>Music</option>
+            <option>Traveling</option>
+        </select>
+    `;
+    document.getElementById("hobbies-list").appendChild(div);
+}
+
+function addReference(){
+    let div = document.createElement("div");
+    div.innerHTML = `
+        <input placeholder="Name">
+        <input placeholder="Position">
+        <input placeholder="Workplace">
+        <input placeholder="Phone">
+    `;
+    document.getElementById("reference-list").appendChild(div);
+}
+
+// ================= SIGNATURE =================
+let canvas = document.getElementById("signature-pad");
+let ctx = canvas.getContext("2d");
+let drawing = false;
+
+canvas.addEventListener("mousedown", e => {
+    drawing = true;
+    ctx.beginPath();
+    ctx.moveTo(e.offsetX, e.offsetY);
+});
+
+canvas.addEventListener("mousemove", e => {
+    if (!drawing) return;
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
+});
+
+canvas.addEventListener("mouseup", () => drawing = false);
+
+function clearSignature(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+}
+
+// ================= GENERATE CV =================
+function generateCV(){
+
+    let name = document.getElementById("name").value;
+
+    document.getElementById("cv-name").innerText = name;
+
+    document.getElementById("cv-personal").innerText =
+        "ID: " + document.getElementById("id").value +
+        " | Phone: " + document.getElementById("phone").value +
+        " | Email: " + document.getElementById("email").value +
+        " | Sex: " + document.getElementById("sex").value +
+        " | Marital: " + document.getElementById("marital").value +
+        " | Address: " + document.getElementById("full-address").innerText;
+
+    let edu = "<tr><th>Year</th><th>School</th><th>Qualification</th></tr>";
+    document.querySelectorAll("#education-list div").forEach(d=>{
+        let i = d.querySelectorAll("input");
+        edu += `<tr><td>${i[0].value}</td><td>${i[1].value}</td><td>${i[2].value}</td></tr>`;
+    });
+    document.getElementById("cv-education").innerHTML = edu;
+
+    let lang = "<tr><th>Language</th><th>Speaking</th><th>Listening</th><th>Writing</th></tr>";
+    document.querySelectorAll("#language-list div").forEach(d=>{
+        let i = d.querySelectorAll("input,select");
+        lang += `<tr>
+        <td>${i[0].value}</td>
+        <td>${i[1].value}</td>
+        <td>${i[2].value}</td>
+        <td>${i[3].value}</td>
+        </tr>`;
+    });
+    document.getElementById("cv-languages").innerHTML = lang;
+
+    let skills = "";
+    document.querySelectorAll("#skills-list select").forEach(s=>{
+        skills += `<li>${s.value}</li>`;
+    });
+    document.getElementById("cv-skills").innerHTML = skills;
+
+    let hobbies = "";
+    document.querySelectorAll("#hobbies-list select").forEach(h=>{
+        hobbies += `<li>${h.value}</li>`;
+    });
+    document.getElementById("cv-hobbies").innerHTML = hobbies;
+
+    let refs = "";
+    document.querySelectorAll("#reference-list div").forEach((d,i)=>{
+        let r = d.querySelectorAll("input");
+        refs += `${i+1}. ${r[0].value}, ${r[1].value}, ${r[2].value}, Tel: ${r[3].value}<br>`;
+    });
+    document.getElementById("cv-ref").innerHTML = refs;
+
+    document.getElementById("cv-declaration").innerText =
+        "I " + name + " declare that all information provided above are true and accurate.";
+
+    document.getElementById("cv-sign-name").innerText = name;
+}
+
+// ================= PDF =================
+function downloadPDF(){
+    html2pdf().from(document.getElementById("cv")).save("CV.pdf");
+}
+
+</script>
+
+</body>
+</html>
