@@ -1,404 +1,264 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Professional CV Builder</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional CV Builder</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; --white: #ffffff; --border: #dcdde1; }
+        * { box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
+        body { background: var(--bg); margin: 0; padding: 20px; color: var(--primary); }
+        .container { display: grid; grid-template-columns: 1fr 1.2fr; gap: 30px; max-width: 1400px; margin: auto; }
+        .form-container { background: var(--white); padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .section-group { margin-bottom: 20px; padding: 15px; border: 1px solid var(--border); border-radius: 6px; }
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.85rem; }
+        input, select, textarea { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; }
+        button { cursor: pointer; border: none; border-radius: 4px; padding: 10px; transition: 0.2s; }
+        .btn-add { background: var(--accent); color: white; margin-top: 5px; }
+        .btn-remove { background: #e74c3c; color: white; padding: 2px 8px; }
+        .btn-generate { background: #27ae60; color: white; width: 100%; font-size: 1.1rem; margin-top: 20px; font-weight: bold; }
+        #sig-canvas { border: 1px dashed #ccc; background: #fafafa; width: 100%; height: 80px; }
+        
+        /* Preview Styling to Match Image */
+        .preview-container { background: var(--white); padding: 50px; min-height: 1056px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); position: sticky; top: 20px; }
+        #cv-output { color: #000; line-height: 1.8; font-size: 12pt; }
+        .cv-title { text-align: right; text-decoration: underline; font-size: 16pt; font-weight: bold; margin-bottom: 50px; text-decoration-thickness: 2px; }
+        .cv-section { margin-bottom: 25px; }
+        .cv-section-title { font-weight: bold; text-transform: uppercase; text-decoration: underline; text-decoration-thickness: 2px; margin-bottom: 15px; font-size: 14pt; }
+        
+        .photo-preview { width: 180px; height: 200px; border: 1px solid #ccc; object-fit: cover; display: none; margin-bottom: 20px; }
+        .personal-details p { margin: 5px 0; }
 
-<style>
-body { font-family: Arial; margin:0; background:#f4f6f9; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        table, th, td { border: 1px solid #000; }
+        th, td { padding: 8px; text-align: left; }
+        .signature-img { max-width: 200px; border-bottom: 1px solid #000; margin-top: 5px; }
 
-.container { display:flex; }
-
-.form {
-    width:50%;
-    padding:20px;
-    background:white;
-    height:100vh;
-    overflow:auto;
-}
-
-.preview {
-    width:50%;
-    padding:20px;
-    background:#e9ecef;
-    height:100vh;
-    overflow:auto;
-}
-
-input, select {
-    width:100%;
-    margin:5px 0 10px;
-    padding:6px;
-}
-
-button {
-    padding:8px;
-    margin:5px 0;
-    cursor:pointer;
-}
-
-.cv {
-    background:white;
-    padding:20px;
-}
-
-h2 {
-    border-bottom:1px solid black;
-}
-
-table {
-    width:100%;
-    border-collapse: collapse;
-}
-
-td, th {
-    border:1px solid black;
-    padding:5px;
-}
-
-.photo {
-    width:120px;
-    height:120px;
-    object-fit: cover;
-    border:1px solid black;
-    float:right;
-}
-</style>
+        @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+    </style>
 </head>
-
 <body>
 
 <div class="container">
+    <div class="form-container">
+        <h2>CV Editor</h2>
+        
+        <div class="section-group">
+            <label>Full Name</label>
+            <input type="text" id="in-name" placeholder="Ex: ipb king" oninput="updateCV()">
+            <label>ID Number</label>
+            <input type="text" id="in-id" placeholder="Ex: 12004900..." oninput="updateCV()">
+            <div class="input-row" style="margin-top:10px">
+                <div><label>Email</label><input type="email" id="in-email" placeholder="Ex: name@gmail.com" oninput="updateCV()"></div>
+                <div><label>Tel</label><input type="text" id="in-phone" placeholder="Ex: 079..." oninput="updateCV()"></div>
+            </div>
+            <div class="input-row">
+                <div><label>Sex</label><select id="in-gender" onchange="updateCV()"><option value="">Select</option><option>male</option><option>female</option></select></div>
+                <div><label>Marital Status</label><select id="in-status" onchange="updateCV()"><option value="">Select</option><option>single</option><option>married</option></select></div>
+            </div>
+            <label>Address</label>
+            <input type="text" id="in-address" placeholder="Ex: Nyagatare district..." oninput="updateCV()">
+            <label>Profile Photo</label>
+            <input type="file" accept="image/*" onchange="handlePhoto(this)">
+        </div>
 
-<!-- FORM -->
-<div class="form">
+        <div class="section-group"><label>Education</label><div id="edu-inputs"></div><button class="btn-add" onclick="addRow('edu')">+ Add Education</button></div>
+        <div class="section-group"><label>Languages</label><div id="lang-inputs"></div><button class="btn-add" onclick="addRow('lang')">+ Add Language</button></div>
+        <div class="section-group"><label>Work Experience</label><div id="work-inputs"></div><button class="btn-add" onclick="addRow('work')">+ Add Experience</button></div>
+        <div class="section-group"><label>Other Skills</label><div id="skill-inputs"></div><button class="btn-add" onclick="addRow('skill')">+ Add Skill</button></div>
+        <div class="section-group"><label>Hobbies</label><div id="hobby-inputs"></div><button class="btn-add" onclick="addRow('hobby')">+ Add Hobby</button></div>
+        <div class="section-group"><label>References</label><div id="ref-inputs"></div><button class="btn-add" onclick="addRow('ref')">+ Add Reference</button></div>
 
-<h2>Personal Info</h2>
+        <div class="section-group">
+            <label>Signature</label>
+            <canvas id="sig-canvas"></canvas>
+            <button onclick="clearCanvas()" style="font-size: 0.7rem; margin-top:5px">Clear</button>
+        </div>
+        <button class="btn-generate" onclick="downloadPDF()">DOWNLOAD PDF</button>
+    </div>
 
-<input id="name" placeholder="Full Name">
-<input id="id" placeholder="ID (optional)">
-<input id="phone" placeholder="Phone">
-<input id="email" placeholder="Email">
-<input id="photo" type="file">
+    <div class="preview-container" id="printable-cv">
+        <div id="cv-output">
+            <div class="cv-title">CURRICULUM VITAE</div>
+            
+            <div class="cv-section">
+                <div class="cv-section-title">PERSON IDENTIFICATION</div>
+                <img id="out-photo" class="photo-preview">
+                <div class="personal-details">
+                    <p><strong><span id="out-name" style="text-transform: uppercase;"></span></strong></p>
+                    <p id="p-id" style="display:none"><strong>ID:</strong> <span id="out-id"></span></p>
+                    <p id="p-phone" style="display:none"><strong>Tel:</strong> <span id="out-phone"></span></p>
+                    <p id="p-email" style="display:none"><strong>Email:</strong> <span id="out-email" style="color: #0056b3; text-decoration: underline;"></span></p>
+                    <p id="p-status" style="display:none"><strong>Marital status:</strong> <span id="out-status"></span></p>
+                    <p id="p-gender" style="display:none"><strong>Sex:</strong> <span id="out-gender"></span></p>
+                    <p id="p-address" style="display:none"><strong>Address:</strong> <span id="out-address"></span></p>
+                </div>
+            </div>
 
-<select id="sex">
-<option>Male</option>
-<option>Female</option>
-</select>
+            <div id="sec-edu" class="cv-section"><div class="cv-section-title">Educational Background</div><table id="table-edu"><thead><tr><th>Year</th><th>Institution</th><th>Qualification</th></tr></thead><tbody></tbody></table></div>
+            <div id="sec-lang" class="cv-section"><div class="cv-section-title">Language Proficiency</div><table id="table-lang"><thead><tr><th>Language</th><th>Speaking</th><th>Listening</th><th>Writing</th></tr></thead><tbody></tbody></table></div>
+            <div id="sec-work" class="cv-section"><div class="cv-section-title">Working Experience</div><table id="table-work"><thead><tr><th>Year</th><th>Company</th><th>Position</th></tr></thead><tbody></tbody></table></div>
+            <div id="sec-skill" class="cv-section"><div class="cv-section-title">Other Skills</div><ul id="list-skill"></ul></div>
+            <div id="sec-hobby" class="cv-section"><div class="cv-section-title">Hobbies</div><ul id="list-hobby"></ul></div>
+            <div id="sec-ref" class="cv-section"><div class="cv-section-title">References</div><div id="out-ref"></div></div>
 
-<select id="marital">
-<option>Single</option>
-<option>Married</option>
-</select>
-
-<h2>Address</h2>
-
-<select id="province" onchange="updateDistricts(); updateAddress();"></select>
-
-<select id="district" onchange="updateAddress();">
-<option value="">Select District</option>
-</select>
-
-<p><b>Full Address:</b> <span id="full-address"></span></p>
-
-<h2>Education</h2>
-<div id="education-list"></div>
-<button onclick="addEducation()">+ Add Education</button>
-
-<h2>Languages</h2>
-<div id="language-list"></div>
-<button onclick="addLanguage()">+ Add Language</button>
-
-<h2>Skills</h2>
-<div id="skills-list"></div>
-<button onclick="addSkill()">+ Add Skill</button>
-
-<h2>Hobbies</h2>
-<div id="hobbies-list"></div>
-<button onclick="addHobby()">+ Add Hobby</button>
-
-<h2>References</h2>
-<div id="reference-list"></div>
-<button onclick="addReference()">+ Add Reference</button>
-
-<br><br>
-<button onclick="generateCV()">Generate CV</button>
-<button onclick="downloadPDF()">Download PDF</button>
-
+            <div class="cv-section">
+                <div class="cv-section-title">Declaration</div>
+                <p>I <strong id="decl-name"></strong> declare that the information provided above is true and accurate to the best of my knowledge.</p>
+                <div style="margin-top: 15px;">
+                    <div id="out-name-sig" style="font-weight:bold"></div>
+                    <img id="out-signature" class="signature-img" style="display:none;">
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-
-<!-- PREVIEW -->
-<div class="preview">
-
-<div class="cv" id="cv">
-
-<h1 style="text-align:center;">CURRICULUM VITAE</h1>
-
-<img id="cv-photo" class="photo">
-
-<h1 id="cv-name"></h1>
-
-<h2>PERSONAL DETAILS</h2>
-<p id="cv-personal"></p>
-
-<h2>EDUCATIONAL BACKGROUND</h2>
-<table id="cv-education"></table>
-
-<h2>LANGUAGE USE</h2>
-<table id="cv-languages"></table>
-
-<h2>OTHER SKILLS</h2>
-<ul id="cv-skills"></ul>
-
-<h2>HOBBIES</h2>
-<ul id="cv-hobbies"></ul>
-
-<h2>REFERENCE</h2>
-<p id="cv-ref"></p>
-
-<h2>DECLARATION</h2>
-<p id="cv-declaration"></p>
-
-<br><br>
-
-<p id="cv-sign-name" style="text-align:right; font-weight:bold;"></p>
-
-<canvas id="signature-pad" width="300" height="100" style="border:1px solid black; display:block; margin-left:auto;"></canvas>
-
-<button onclick="clearSignature()">Clear Signature</button>
-
-</div>
-
-</div>
-
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
 
 <script>
+    function addRow(type) {
+        const container = document.getElementById(`${type}-inputs`);
+        const div = document.createElement('div');
+        div.className = 'input-row';
+        let html = '';
+        if(type === 'edu') html = `<input type="text" placeholder="2018 — 2021" class="edu-yr"><input type="text" placeholder="Institution" class="edu-inst"><input type="text" placeholder="Degree" class="edu-deg">`;
+        else if(type === 'work') html = `<input type="text" placeholder="2022 — Present" class="work-yr"><input type="text" placeholder="Company" class="work-comp"><input type="text" placeholder="Position" class="work-pos">`;
+        else if(type === 'lang') html = `<input type="text" placeholder="Language" class="lang-name"><select class="lang-v1"><option>Excellent</option><option>Good</option></select><select class="lang-v2"><option>Excellent</option><option>Good</option></select><select class="lang-v3"><option>Excellent</option><option>Good</option></select>`;
+        else if(type === 'ref') html = `<input type="text" placeholder="Name" class="ref-name"><input type="text" placeholder="Position" class="ref-pos"><input type="text" placeholder="Contact" class="ref-contact">`;
+        else html = `<input type="text" placeholder="Detail" class="${type}-val">`;
 
-// ================= PHOTO =================
-document.getElementById("photo").addEventListener("change", function(e){
-    const reader = new FileReader();
-    reader.onload = function(){
-        document.getElementById("cv-photo").src = reader.result;
+        div.innerHTML = `${html} <button class="btn-remove" onclick="this.parentElement.remove(); updateCV()">✕</button>`;
+        container.appendChild(div);
+        div.querySelectorAll('input, select').forEach(el => el.addEventListener('input', updateCV));
+        updateCV();
     }
-    reader.readAsDataURL(e.target.files[0]);
-});
 
-// ================= RWANDA ADDRESS FIX =================
-const rwandaData = {
-    "Northern Province": ["Musanze", "Burera", "Gicumbi", "Rulindo", "Gakenke"],
-    "Southern Province": ["Huye", "Nyanza", "Gisagara", "Nyamagabe", "Nyaruguru", "Muhanga", "Ruhango", "Kamonyi"],
-    "Eastern Province": ["Rwamagana", "Kayonza", "Kirehe", "Ngoma", "Bugesera", "Nyagatare"],
-    "Western Province": ["Rubavu", "Nyabihu", "Rutsiro", "Karongi", "Ngororero", "Rusizi", "Nyamasheke"],
-    "Kigali City": ["Gasabo", "Kicukiro", "Nyarugenge"]
-};
+    function handlePhoto(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => { const img = document.getElementById('out-photo'); img.src = e.target.result; img.style.display = 'block'; };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
 
-// LOAD PROVINCES
-function loadProvinces() {
-    let provinceSelect = document.getElementById("province");
+    function updateCV() {
+        const name = document.getElementById('in-name').value;
+        const idNum = document.getElementById('in-id').value;
+        const email = document.getElementById('in-email').value;
+        const phone = document.getElementById('in-phone').value;
+        const address = document.getElementById('in-address').value;
+        const gen = document.getElementById('in-gender').value;
+        const stat = document.getElementById('in-status').value;
 
-    provinceSelect.innerHTML = `<option value="">Select Province</option>`;
+        document.getElementById('out-name').innerText = name;
+        document.getElementById('decl-name').innerText = name || "[Your Name]";
+        document.getElementById('out-name-sig').innerText = name;
+        
+        document.getElementById('out-id').innerText = idNum;
+        document.getElementById('p-id').style.display = idNum ? 'block' : 'none';
+        
+        document.getElementById('out-email').innerText = email;
+        document.getElementById('p-email').style.display = email ? 'block' : 'none';
+        
+        document.getElementById('out-phone').innerText = phone;
+        document.getElementById('p-phone').style.display = phone ? 'block' : 'none';
 
-    Object.keys(rwandaData).forEach(province => {
-        let opt = document.createElement("option");
-        opt.value = province;
-        opt.textContent = province;
-        provinceSelect.appendChild(opt);
-    });
-}
+        document.getElementById('out-address').innerText = address;
+        document.getElementById('p-address').style.display = address ? 'block' : 'none';
 
-// UPDATE DISTRICTS
-function updateDistricts() {
-    let province = document.getElementById("province").value;
-    let districtSelect = document.getElementById("district");
+        document.getElementById('out-gender').innerText = gen;
+        document.getElementById('p-gender').style.display = gen ? 'block' : 'none';
 
-    districtSelect.innerHTML = `<option value="">Select District</option>`;
+        document.getElementById('out-status').innerText = stat;
+        document.getElementById('p-status').style.display = stat ? 'block' : 'none';
 
-    if (province && rwandaData[province]) {
-        rwandaData[province].forEach(district => {
-            let opt = document.createElement("option");
-            opt.value = district;
-            opt.textContent = district;
-            districtSelect.appendChild(opt);
+        renderTable('edu', ['edu-yr', 'edu-inst', 'edu-deg']);
+        renderTable('work', ['work-yr', 'work-comp', 'work-pos']);
+        renderTable('lang', ['lang-name', 'lang-v1', 'lang-v2', 'lang-v3']);
+        renderList('skill'); renderList('hobby');
+        
+        const refOut = document.getElementById('out-ref');
+        refOut.innerHTML = '';
+        document.querySelectorAll('#ref-inputs .input-row').forEach(row => {
+            const n = row.querySelector('.ref-name').value;
+            const p = row.querySelector('.ref-pos').value;
+            const c = row.querySelector('.ref-contact').value;
+            if(n || p || c) refOut.innerHTML += `<div style="margin-bottom:10px"><strong>${n}</strong>, ${p} (${c})</div>`;
+        });
+
+        ['sec-edu', 'sec-work', 'sec-lang', 'sec-skill', 'sec-hobby', 'sec-ref'].forEach(id => {
+            const section = document.getElementById(id);
+            const content = id.includes('table') || ['sec-edu','sec-work','sec-lang'].includes(id) ? section.querySelector('tbody') : (id === 'sec-ref' ? document.getElementById('out-ref') : document.getElementById(id.replace('sec-', 'list-')));
+            section.style.display = (content && content.innerHTML.trim() !== "") ? 'block' : 'none';
         });
     }
-}
 
-// UPDATE FULL ADDRESS
-function updateAddress() {
-    let province = document.getElementById("province").value;
-    let district = document.getElementById("district").value;
-
-    let full = "";
-
-    if (district) {
-        full = district + " District";
+    function renderTable(type, classes) {
+        const tbody = document.querySelector(`#table-${type} tbody`);
+        tbody.innerHTML = '';
+        document.querySelectorAll(`#${type}-inputs .input-row`).forEach(row => {
+            const vals = classes.map(c => row.querySelector(`.${c}`).value);
+            if(vals.some(v => v.trim() !== "")) {
+                const tr = document.createElement('tr');
+                vals.forEach(v => tr.innerHTML += `<td>${v}</td>`);
+                tbody.appendChild(tr);
+            }
+        });
     }
 
-    if (province) {
-        full += ", " + province;
+    function renderList(type) {
+        const list = document.getElementById(`list-${type}`);
+        list.innerHTML = '';
+        document.querySelectorAll(`.${type}-val`).forEach(input => {
+            if(input.value.trim() !== "") {
+                const li = document.createElement('li');
+                li.innerText = input.value;
+                list.appendChild(li);
+            }
+        });
     }
 
-    full += ", Rwanda";
+    const canvas = document.getElementById('sig-canvas');
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+    const start = (e) => { drawing = true; ctx.beginPath(); };
+    const move = (e) => { if(!drawing) return; const rect = canvas.getBoundingClientRect(); const pos = e.touches ? e.touches[0] : e; ctx.lineTo(pos.clientX - rect.left, pos.clientY - rect.top); ctx.stroke(); };
+    const stop = () => { drawing = false; document.getElementById('out-signature').src = canvas.toDataURL(); document.getElementById('out-signature').style.display = 'block'; };
+    canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', stop);
+    canvas.addEventListener('touchstart', start); canvas.addEventListener('touchmove', move); canvas.addEventListener('touchend', stop);
 
-    document.getElementById("full-address").innerText = full;
-}
+    function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); document.getElementById('out-signature').style.display = 'none'; }
 
-// RUN PROVINCES ON PAGE LOAD (FIX)
-window.onload = function () {
-    loadProvinces();
-};
+    // --- THE ABSOLUTE PDF FIX ---
+    function downloadPDF() {
+        // Step 1: Force data onto preview screen 
+        updateCV(); 
+        
+        const element = document.getElementById('printable-cv');
+        
+        // Step 2: Temporarily remove the restrictive CSS height so all text fits on PDF
+        const originalMinHeight = element.style.minHeight;
+        element.style.minHeight = "auto"; 
 
-// ================= DYNAMIC FIELDS =================
-function addEducation(){
-    let div = document.createElement("div");
-    div.innerHTML = `
-        <input placeholder="Year">
-        <input placeholder="School">
-        <input placeholder="Qualification">
-    `;
-    document.getElementById("education-list").appendChild(div);
-}
+        const opt = {
+            margin:       [0.5, 0.5], // Gives room for borders and text
+            filename:     'My_CV.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { 
+                scale: 2, 
+                useCORS: true,
+                scrollX: 0,
+                scrollY: 0
+            },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
 
-function addLanguage(){
-    let div = document.createElement("div");
-    div.innerHTML = `
-        <input placeholder="Language">
-        <select><option>Excellent</option><option>Very Good</option><option>Good</option></select>
-        <select><option>Excellent</option><option>Very Good</option><option>Good</option></select>
-        <select><option>Excellent</option><option>Very Good</option><option>Good</option></select>
-    `;
-    document.getElementById("language-list").appendChild(div);
-}
-
-function addSkill(){
-    let div = document.createElement("div");
-    div.innerHTML = `
-        <select>
-            <option>Computer Skills</option>
-            <option>Communication</option>
-            <option>Teamwork</option>
-            <option>Leadership</option>
-            <option>Problem Solving</option>
-        </select>
-    `;
-    document.getElementById("skills-list").appendChild(div);
-}
-
-function addHobby(){
-    let div = document.createElement("div");
-    div.innerHTML = `
-        <select>
-            <option>Reading</option>
-            <option>Football</option>
-            <option>Music</option>
-            <option>Traveling</option>
-        </select>
-    `;
-    document.getElementById("hobbies-list").appendChild(div);
-}
-
-function addReference(){
-    let div = document.createElement("div");
-    div.innerHTML = `
-        <input placeholder="Name">
-        <input placeholder="Position">
-        <input placeholder="Workplace">
-        <input placeholder="Phone">
-    `;
-    document.getElementById("reference-list").appendChild(div);
-}
-
-// ================= SIGNATURE =================
-let canvas = document.getElementById("signature-pad");
-let ctx = canvas.getContext("2d");
-let drawing = false;
-
-canvas.addEventListener("mousedown", e => {
-    drawing = true;
-    ctx.beginPath();
-    ctx.moveTo(e.offsetX, e.offsetY);
-});
-
-canvas.addEventListener("mousemove", e => {
-    if (!drawing) return;
-    ctx.lineTo(e.offsetX, e.offsetY);
-    ctx.stroke();
-});
-
-canvas.addEventListener("mouseup", () => drawing = false);
-
-function clearSignature(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-}
-
-// ================= GENERATE CV =================
-function generateCV(){
-
-    let name = document.getElementById("name").value;
-
-    document.getElementById("cv-name").innerText = name;
-
-    document.getElementById("cv-personal").innerText =
-        "ID: " + document.getElementById("id").value +
-        " | Phone: " + document.getElementById("phone").value +
-        " | Email: " + document.getElementById("email").value +
-        " | Sex: " + document.getElementById("sex").value +
-        " | Marital: " + document.getElementById("marital").value +
-        " | Address: " + document.getElementById("full-address").innerText;
-
-    let edu = "<tr><th>Year</th><th>School</th><th>Qualification</th></tr>";
-    document.querySelectorAll("#education-list div").forEach(d=>{
-        let i = d.querySelectorAll("input");
-        edu += `<tr><td>${i[0].value}</td><td>${i[1].value}</td><td>${i[2].value}</td></tr>`;
-    });
-    document.getElementById("cv-education").innerHTML = edu;
-
-    let lang = "<tr><th>Language</th><th>Speaking</th><th>Listening</th><th>Writing</th></tr>";
-    document.querySelectorAll("#language-list div").forEach(d=>{
-        let i = d.querySelectorAll("input,select");
-        lang += `<tr>
-        <td>${i[0].value}</td>
-        <td>${i[1].value}</td>
-        <td>${i[2].value}</td>
-        <td>${i[3].value}</td>
-        </tr>`;
-    });
-    document.getElementById("cv-languages").innerHTML = lang;
-
-    let skills = "";
-    document.querySelectorAll("#skills-list select").forEach(s=>{
-        skills += `<li>${s.value}</li>`;
-    });
-    document.getElementById("cv-skills").innerHTML = skills;
-
-    let hobbies = "";
-    document.querySelectorAll("#hobbies-list select").forEach(h=>{
-        hobbies += `<li>${h.value}</li>`;
-    });
-    document.getElementById("cv-hobbies").innerHTML = hobbies;
-
-    let refs = "";
-    document.querySelectorAll("#reference-list div").forEach((d,i)=>{
-        let r = d.querySelectorAll("input");
-        refs += `${i+1}. ${r[0].value}, ${r[1].value}, ${r[2].value}, Tel: ${r[3].value}<br>`;
-    });
-    document.getElementById("cv-ref").innerHTML = refs;
-
-    document.getElementById("cv-declaration").innerText =
-        "I " + name + " declare that all information provided above are true and accurate.";
-
-    document.getElementById("cv-sign-name").innerText = name;
-}
-
-// ================= PDF =================
-function downloadPDF(){
-    html2pdf().from(document.getElementById("cv")).save("CV.pdf");
-}
-
+        // Step 3: Run the exporter and revert screen aesthetics back
+        html2pdf().from(element).set(opt).save().then(() => {
+             element.style.minHeight = originalMinHeight;
+        });
+    }
 </script>
-
 </body>
 </html>
